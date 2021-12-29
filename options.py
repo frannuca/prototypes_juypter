@@ -111,37 +111,3 @@ def P_uo(S,K,T,r,q,sigma,BL):
                 )
     return npv
 
-
-
-def syntheticStock(S,K,T,r,q,sigma,BL,gearing):
-    return C_uo(S,K,T,r,q,sigma,BL) - gearing * P_uo(S,K,T,r,q,sigma,BL)
-
-
-
-def accumulator(S,K,r,q,sigma,BL,gearing,periods,shares_per_day,cob):
-    payoff = 0
-    for x in periods:
-        print(x)
-        (dstart,dend) = x
-        if dend > cob:
-            ndays = np.busday_count( dstart, dend )
-            T = np.busday_count( cob, dend )/260.0
-            payoff += ndays * shares_per_day * syntheticStock(S,K,T,r,q,sigma,BL,gearing)
-    return payoff
-
-cob = dt.date(2021,9,25)
-BL=105
-K=100
-gearing=1
-shares_per_day = 10
-r=0.01
-q=0.0
-sigma = 0.2
-period_starts = [cob + dt.timedelta(days=20*i) for i in range(0,5)]
-periods_ends = [t0 + dt.timedelta(days=19) for t0 in period_starts]
-periods = list(zip(period_starts,periods_ends))
-
-
-npv = lambda s : accumulator(s,K,r,q,sigma,BL,gearing,periods,shares_per_day,cob)
-x = npv(150)
-print(x)
