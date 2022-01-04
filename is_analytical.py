@@ -31,10 +31,12 @@ class OptionInstrument:
 volfactor = np.sqrt(10.0/260.0)
 portfolio= [OptionInstrument(spot=100.0,K=100.0,T=1.00,notional=50,r=0.01,q=0.0,sigma=0.50,iscall=True),
             OptionInstrument(spot=100.0,K=100.0,T=0.75,notional=50,r=0.01,q=0.0,sigma=0.15,iscall=True),
-            OptionInstrument(spot=100.0,K=99.0,T=0.5,notional=-50,r=0.01,q=0.0,sigma=0.65,iscall=False),
-            OptionInstrument(spot=100.0,K=99.0,T=0.5,notional=-50,r=0.01,q=0.0,sigma=0.25,iscall=False),
-            OptionInstrument(spot=100.0,K=99.0,T=0.5,notional=150,r=0.01,q=0.0,sigma=0.25,iscall=False),
-            OptionInstrument(spot=100.0,K=105.0,T=0.5,notional=150,r=0.01,q=0.0,sigma=0.25,iscall=True),
+            OptionInstrument(spot=100.0,K=100.0,T=0.75,notional=50,r=0.01,q=0.0,sigma=0.25,iscall=True),
+            OptionInstrument(spot=100.0,K=100.0,T=0.75,notional=50,r=0.01,q=0.0,sigma=0.15,iscall=True),
+            OptionInstrument(spot=110.0,K=100.0,T=0.75,notional=50,r=0.01,q=0.0,sigma=0.05,iscall=True),
+            OptionInstrument(spot=110.0,K=100.0,T=0.75,notional=50,r=0.01,q=0.0,sigma=0.45,iscall=True),
+            OptionInstrument(spot=110.0,K=100.0,T=0.75,notional=50,r=0.01,q=0.0,sigma=0.15,iscall=True),
+            OptionInstrument(spot=110.0,K=100.0,T=0.75,notional=50,r=0.01,q=0.0,sigma=0.07,iscall=True)
             ]
 def compute_portfolio_loss(xshocks):
     return np.sum(p.loss(p.spot*(1+s)) for (p,s) in zip(portfolio,xshocks))
@@ -143,17 +145,17 @@ for i in range(rho.shape[0]):
 
 sigma = np.diag(np.array([p.sigma*volfactor for p in portfolio]))
 cov=np.matmul(np.matmul(sigma,rho),sigma)
-cl = 0.999
+cl = 0.99
 
 nsims_v = []
 
-nSims0 =500
+nSims0 = 500
 mc=[]
 ms_n=[]
 ismc=[]
 ismc_update=[]
 
-lossx= approximate_mu_with_fast_mc(15000,cov,cl)
+lossx= approximate_mu_with_fast_mc(50000,cov,cl)
 mu = get_approx_mu(cov,cl)
 
 for niter in range(6):
@@ -161,7 +163,7 @@ for niter in range(6):
     ms_n.append(nsims)
     print(f"runnin IS MC for {nsims} simulations")    
     loss= run_mc_is(nAssets=len(portfolio),mu = mu, nSims=nsims,Cov=cov,cl=cl)
-    ismc.append((loss-lossx)/lossx*100.0)
+    ismc.append(loss)
     print(f"VaR={loss}, mu = {mu.transpose()}")
 
 print(f"VaRx MC = {lossx}")
@@ -170,19 +172,22 @@ for nsims in ms_n:
     print(f"runnin IS MC Update for {nsims} simulations")    
     loss= run_mc_is(nAssets=len(portfolio),mu = mu, nSims=nsims,Cov=cov,cl=cl)
     mu = get_approx_mu(Cov=cov,cl=cl,x=loss)    
-    ismc_update.append((loss-lossx)/lossx*100.0)
+    ismc_update.append(loss)
     print(f"VaR={loss}, mu = {mu.transpose()}")
 
 for nsims in ms_n:   
-   print(f"runnin MC for {nsims} simulations")
+   print(f"running MC for {nsims} simulations")
    loss= approximate_mu_with_fast_mc(nsims,cov,cl)
-   mc.append((loss-lossx)/lossx*100.0)
+   mc.append(loss)
    
 
+print(f"convergence value VaR={lossx}")
 plt.plot((ms_n),mc,label="MC")
 plt.plot((ms_n),ismc,label="IS MC")
 plt.plot((ms_n),ismc_update,label="IS MC Update")
-
+plt.plot(ms_n,[lossx]*len(ms_n),'-.',label="Asymptotic Value")
+plt.xlabel("Number of Simulations")
+plt.ylabel("Portfolio Losses")
 plt.legend()
 plt.grid()
 plt.show()
